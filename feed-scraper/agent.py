@@ -4,6 +4,7 @@ import numpy as np
 import feedparser
 import requests
 import torch
+import sys
 
 def fetch_articles(rss_feeds):
     articles = []
@@ -28,7 +29,7 @@ def rank_articles(articles, topic, model, tokenizer):
         similarity = cosine_similarity(topic_embedding, article_embedding)[0][0]
         ranked.append(({'title': article.title, 'link': article.link}, similarity))
     
-    return sorted(ranked, key=lambda x: x[1], reverse=True)
+    return sorted(ranked, key=lambda x: x[1], reverse=False)
 
 # Usage
 rss_feeds = [
@@ -47,18 +48,33 @@ rss_feeds = [
               "http://www.reddit.com/r/cpp/.rss",
               "http://blog.knatten.org/feed/"
               "blog.rust-lang.org/feed.xml",
-              "elixirstatus.com/rss"
+              "elixirstatus.com/rss",
+              "https://feeds.feedburner.com/codinghorror",
+              "https://lambda-the-ultimate.org/rss.xml",
+              "https://syndication.thedailywtf.com/TheDailyWtf",
+              "https://martinfowler.com/bliki/bliki.atom",
+              "https://www.joelonsoftware.com/rss.xml",
+              "https://feeds.feedburner.com/freetechbooks",
+              "https://lessig.org/blog/atom.xml",
+              "https://radar.oreilly.com/index.rdf",
+              "https://feeds.feedburner.com/PaulGrahamUnofficialRssFeed",
+              "https://feeds.feedburner.com/techtarget/tsscom/home",
+              "https://www.tbray.org/ongoing/ongoing.atom",
+              "https://compilers.iecc.com/comparch/rss",
+              "https://okmij.org/ftp/rss.xml"
             ]
-topic = "mysql"
+if len(sys.argv) <= 1:
+    print("Error: No arguments provided. Please include a topic")
+    sys.exit(1)
+print(f"Searching on your topic: {sys.argv[1]}")
+topic = sys.argv[1]
 
 tokenizer = AutoTokenizer.from_pretrained("sentence-transformers/all-mpnet-base-v2")
 model = AutoModel.from_pretrained("sentence-transformers/all-mpnet-base-v2")
 
 articles = fetch_articles(rss_feeds)
 ranked_articles = rank_articles(articles, topic, model, tokenizer)
-rank = 1
+rank = len(ranked_articles)
 for article in ranked_articles:
     print(str(rank) + ". " + article[0]['title'] + " " + article[0]['link'])
-    rank += 1
-
-print("FINISHED")
+    rank -= 1
